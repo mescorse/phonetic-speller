@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Private Phonetic Speller</title>
+  <meta name="theme-color" content="#174ea6" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='8' y1='4' x2='58' y2='62' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23255fbe'/%3E%3Cstop offset='1' stop-color='%23111f3b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M14 15a8 8 0 0 1 8-8h20a8 8 0 0 1 8 8v21a8 8 0 0 1-8 8H30L19 53v-9a8 8 0 0 1-5-8V15Z' fill='%23fff'/%3E%3Cpath d='M25 37h4l1.5-4h6.8l1.5 4h4l-8.1-19h-2.2L25 37Zm6.8-7.4 2.1-5.7 2.1 5.7h-4.2Z' fill='%231d5ab2'/%3E%3Ccircle cx='43' cy='22' r='3.4' fill='%23ffbd45'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5c677d;
+      --line: #d9e1ee;
+      --canvas: #f4f7fb;
+      --card: #ffffff;
+      --accent: #2166d1;
+      --accent-deep: #164a9b;
+      --accent-soft: #eaf2ff;
+      --success: #087443;
+      --success-soft: #e7f7ef;
+      --shadow: 0 12px 34px rgba(31, 49, 82, .10);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--ink);
+    }
+
+    header {
+      padding: 3px 10px 4px;
+      color: #fff;
+      background: linear-gradient(122deg, #111d35, #1b4b98 88%);
+    }
+
+    .header-inner,
+    main {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 2px;
+      color: #bbd5ff;
+      font-size: .62rem;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+
+    .subtitle {
+      max-width: 740px;
+      margin: 2px 0 0;
+      color: #e1ebfc;
+      font-size: .92rem;
+      line-height: 1.3;
+    }
+
+    main { padding: 7px 10px 12px; }
+
+    .privacy-note {
+      display: flex;
+      gap: 11px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      padding: 5px 8px;
+      border: 1px solid #bde7ce;
+      border-radius: 13px;
+      color: #075b35;
+      background: var(--success-soft);
+      font-size: .94rem;
+      line-height: 1.45;
+    }
+
+    .privacy-note svg { flex: 0 0 auto; margin-top: 1px; }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .input-panel { padding: 8px 10px; }
+
+    .section-heading {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    h2, h3 { margin: 0; }
+
+    h2 { font-size: 1.08rem; }
+    h3 { font-size: .92rem; }
+
+    .helper,
+    .count,
+    .output-description,
+    .reference-note {
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .helper { margin: 4px 0 0; }
+    .count { white-space: nowrap; }
+
+    textarea {
+      width: 100%;
+      min-height: 70px;
+      resize: vertical;
+      padding: 7px 9px;
+      border: 2px solid #cbd6e7;
+      border-radius: 13px;
+      outline: none;
+      color: var(--ink);
+      background: #fff;
+      font: 500 1.1rem/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(33, 102, 209, .15); }
+    textarea::placeholder { color: #8793a6; }
+
+    .actions,
+    .output-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .actions { margin-top: 8px; }
+
+    button {
+      min-height: 29px;
+      padding: 4px 8px;
+      border: 1px solid #b8c7dd;
+      border-radius: 9px;
+      color: #173560;
+      background: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-size: .72rem;
+      font-weight: 750;
+    }
+
+    button:hover { border-color: var(--accent); color: var(--accent-deep); background: var(--accent-soft); }
+    button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid rgba(33, 102, 209, .35); outline-offset: 2px; }
+
+    button.primary {
+      border-color: var(--accent);
+      color: #fff;
+      background: var(--accent);
+    }
+
+    button.primary:hover { color: #fff; background: var(--accent-deep); }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin: 10px 0;
+    }
+
+    .setting {
+      display: grid;
+      gap: 5px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #f8faff;
+    }
+
+    label {
+      font-size: .9rem;
+      font-weight: 800;
+    }
+
+    select {
+      width: 100%;
+      min-height: 29px;
+      padding: 8px 38px 8px 11px;
+      border: 1px solid #b8c7dd;
+      border-radius: 8px;
+      color: var(--ink);
+      background-color: #fff;
+      font: inherit;
+      font-size: .95rem;
+      cursor: pointer;
+    }
+
+    .outputs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .output-panel { min-width: 0; }
+
+    .output-top {
+      min-height: 62px;
+      padding: 7px 9px 6px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fbfcff, #fff);
+    }
+
+    .output-title-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .output-description { display:none; }
+
+    .output-actions button { min-height: 29px; padding-block: 6px; font-size: .82rem; }
+
+    .phonetic-output {
+      min-height: 120px;
+      max-height: 530px;
+      overflow: auto;
+      padding: 8px;
+      background: #fff;
+    }
+
+    .empty-output {
+      display: grid;
+      min-height: 180px;
+      place-items: center;
+      border: 1px dashed #c2cede;
+      border-radius: 12px;
+      color: #738096;
+      text-align: center;
+      font-size: .95rem;
+      line-height: 1.3;
+    }
+
+    .output-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: stretch;
+      min-height: 30px;
+    }
+
+    .output-line + .output-line {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px dashed #d5deeb;
+    }
+
+    .token {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 5px;
+      align-items: center;
+      max-width: 100%;
+      min-height: 32px;
+      padding: 3px 5px 3px 3px;
+      border: 1px solid #c9d8ed;
+      border-radius: 10px;
+      background: #f7faff;
+    }
+
+    .token .original {
+      display: grid;
+      width: 22px;
+      height: 23px;
+      place-items: center;
+      border-radius: 6px;
+      color: #fff;
+      background: #275fb3;
+      font: 800 .85rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .token .word {
+      overflow-wrap: anywhere;
+      color: #122e55;
+      font-size: .92rem;
+      font-weight: 800;
+      line-height: 1.18;
+    }
+
+    .token.symbol { border-color: #e0d2ae; background: #fffaf0; }
+    .token.symbol .original { color: #4d3c16; background: #efd080; }
+    .token.unknown { border-style: dashed; background: #f8f8fa; }
+    .token.unknown .original { color: #4d5260; background: #d7dbe3; }
+
+    .word-space { width: 18px; min-height: 1px; }
+
+    .reference {
+      margin-top: 5px;
+      padding: 0 8px;
+    }
+
+    details { border-top: 1px solid var(--line); }
+    summary {
+      padding: 4px 0;
+      cursor: pointer;
+      color: #173560;
+      font-weight: 800;
+    }
+
+    .reference-content { padding: 0 0 6px; }
+    .reference-note { margin: 0 0 13px; }
+
+    .reference-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+      gap: 5px;
+    }
+
+    .reference-item {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      min-height: 31px;
+      padding: 5px 7px;
+      border: 1px solid #d6deeb;
+      border-radius: 8px;
+      background: #f9fbfe;
+      font-size: .9rem;
+    }
+
+    .reference-letter {
+      width: 22px;
+      color: #245baa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 10;
+      right: 20px;
+      bottom: 20px;
+      max-width: min(420px, calc(100vw - 40px));
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: #fff;
+      background: #16345d;
+      box-shadow: 0 10px 28px rgba(18, 46, 85, .24);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      font-size: .9rem;
+      line-height: 1.4;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+
+
+    .privacy-footer {
+      margin: 7px 0 0;
+      padding: 4px 7px;
+      gap: 5px;
+      border-radius: 6px;
+      font-size: .68rem;
+      line-height: 1.15;
+      opacity: .72;
+    }
+    .privacy-footer svg { width: 11px; height: 11px; }
+
+
+    .compact-helper {
+      display: inline;
+      margin: 0;
+      font-size: .68rem;
+      opacity: .65;
+    }
+
+    /* Compact layout */
+    .header-inner h1 { max-width: 900px; }
+    .subtitle { font-size: .9rem; }
+    .privacy-note { font-size: .82rem; }
+    .helper, .count, .output-description, .reference-note { font-size: .78rem; }
+    .setting label, label { font-size: .82rem; }
+    .setting select { font-size: .88rem; }
+    .output-top { padding-bottom: 8px; }
+    .output-actions button { min-height: 29px; padding: 4px 8px; }
+    .reference { margin-top: 5px; }
+
+    /* Half-screen laptop layout: keep both language results side by side. */
+    header { padding: 4px 8px; }
+    .eyebrow { display: none; }
+    h1 { font-size: .88rem; }
+    main { padding: 6px 7px 7px; }
+    .input-panel { padding: 6px 8px; }
+    .section-heading { align-items: center; gap: 5px; margin-bottom: 4px; }
+    h2 { font-size: .82rem; line-height: 1.15; }
+    .helper, .count { font-size: .67rem; line-height: 1.2; }
+    .helper { margin-top: 1px; }
+    textarea {
+      min-height: 42px;
+      height: 42px;
+      padding: 4px 6px;
+      border-width: 1px;
+      border-radius: 7px;
+      font-size: .88rem;
+      line-height: 1.25;
+    }
+    .actions { margin-top: 4px; gap: 4px; }
+    button { min-height: 24px; padding: 2px 7px; font-size: .66rem; border-radius: 7px; }
+    .settings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin: 5px 0; }
+    .setting { gap: 2px; padding: 4px 6px; border-radius: 8px; }
+    .setting label, label { font-size: .66rem; line-height: 1.15; }
+    .setting select, select {
+      min-height: 26px;
+      padding: 3px 5px;
+      border-radius: 6px;
+      font-size: .69rem;
+    }
+    .outputs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .output-panel { min-width: 0; }
+    .output-top { min-height: 0; padding: 4px 5px; }
+    .output-title-row { align-items: center; gap: 3px; }
+    .output-title-row h2 { min-width: 0; font-size: .69rem; overflow-wrap: anywhere; }
+    .output-actions { flex: 0 0 auto; }
+    .output-actions button { min-height: 22px; padding: 2px 5px; font-size: .62rem; }
+    .phonetic-output {
+      min-height: 100px;
+      max-height: max(150px, calc(100dvh - 220px));
+      overflow: auto;
+      padding: 5px;
+    }
+    .empty-output { min-height: 82px; padding: 5px; font-size: .7rem; }
+    .output-line { gap: 3px; min-height: 22px; }
+    .output-line + .output-line { margin-top: 3px; padding-top: 3px; }
+    .token {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 3px;
+      min-height: 23px;
+      padding: 2px 3px 2px 2px;
+      border-radius: 6px;
+    }
+    .token .original { width: 17px; height: 18px; border-radius: 4px; font-size: .68rem; }
+    .token .word { font-size: .69rem; line-height: 1.12; }
+    .word-space { width: 8px; }
+    .reference { margin-top: 4px; padding: 0 6px; }
+    summary { padding: 3px 0; font-size: .68rem; }
+    .reference-note { margin-bottom: 6px; font-size: .66rem; }
+    .reference-grid { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 4px; }
+    .reference-item { min-height: 25px; padding: 3px 5px; font-size: .68rem; }
+    .reference-letter { width: 17px; }
+    .privacy-footer { margin: 4px 0 0; padding: 2px 4px; font-size: .57rem; line-height: 1.15; }
+    .privacy-footer svg { width: 10px; height: 10px; }
+
+    /* Only narrow phone-sized screens stack the result columns. */
+    @media (max-width: 519px) {
+      .outputs { grid-template-columns: 1fr; }
+      .phonetic-output { max-height: 42vh; }
+      .section-heading { align-items: flex-start; }
+      .count { margin-left: auto; }
+    }
+
+    @media (max-height: 560px) and (min-width: 520px) {
+      .phonetic-output { max-height: calc(100dvh - 190px); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <p class="eyebrow">Local-only tool</p>
+      <h1>Private Phonetic Speller</h1>
+      
+    </div>
+  </header>
+
+  <main>
+    <section class="panel input-panel" aria-labelledby="source-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="source-title">Text to spell</h2>
+          <p class="helper compact-helper">Paste or type text.</p>
+        </div>
+        <span class="count" id="characterCount">0 characters</span>
+      </div>
+      <textarea id="sourceText" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Example: name@example.com"></textarea>
+      <div class="actions">
+        <button type="button" id="pasteButton" class="primary">Paste text</button>
+        <button type="button" id="clearButton">Clear</button>
+      </div>
+    </section>
+
+    <section class="settings" aria-label="Spelling alphabet settings">
+      <div class="setting">
+        <label for="englishVersion">English version</label>
+        <select id="englishVersion">
+          <option value="enNato">NATO / ICAO — international standard</option>
+          <option value="enInformal">Informal phone call — “A as in Apple”</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="secondaryLanguage">Second-language spelling alphabet</label>
+        <select id="secondaryLanguage">
+          <option value="ptBRPhone">Português (Brasil) — palavras de telefone</option>
+          <option value="ptBRIcao">Português (Brasil) — ICAO / rádio</option>
+          <option value="esIcao">Español — ICAO / radio</option>
+          <option value="frPhone">Français — alphabet téléphonique</option>
+          <option value="deClassic">Deutsch — Buchstabiertafel clássica</option>
+          <option value="itPhone">Italiano — alfabeto telefonico</option>
+          <option value="enNato">English — NATO / ICAO</option>
+          <option value="enInformal">English — informal phone call</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="outputs" aria-label="Phonetic spelling results">
+      <article class="panel output-panel" aria-labelledby="english-output-title">
+        <div class="output-top">
+          <div class="output-title-row">
+            <h2 id="english-output-title">English</h2>
+            <div class="output-actions"><button type="button" id="copyEnglish" title="Copy spoken text" aria-label="Copy English spoken text">Copy</button></div>
+          </div>
+          <p class="output-description" id="englishDescription"></p>
+        </div>
+        <div class="phonetic-output" id="englishOutput" aria-live="polite"></div>
+      </article>
+
+      <article class="panel output-panel" aria-labelledby="secondary-output-title">
+        <div class="output-top">
+          <div class="output-title-row">
+            <h2 id="secondary-output-title">Second language</h2>
+            <div class="output-actions"><button type="button" id="copySecondary" title="Copy spoken text" aria-label="Copy second-language spoken text">Copy</button></div>
+          </div>
+          <p class="output-description" id="secondaryDescription"></p>
+        </div>
+        <div class="phonetic-output" id="secondaryOutput" aria-live="polite"></div>
+      </article>
+    </section>
+
+    <section class="panel reference" aria-label="Alphabet reference">
+      <details>
+        <summary>Open the selected alphabet reference</summary>
+        <div class="reference-content">
+          <p class="reference-note" id="referenceNote"></p>
+          <div class="reference-grid" id="referenceGrid"></div>
+        </div>
+      </details>
+    </section>
+
+    <div class="privacy-note privacy-footer" role="note">
+      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      <span><strong>Private by design.</strong> Processed locally in your browser; nothing is uploaded or saved.</span>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    "use strict";
+
+    const englishDigits = {
+      "0": "Zero", "1": "One", "2": "Two", "3": "Tree", "4": "Fower",
+      "5": "Fife", "6": "Six", "7": "Seven", "8": "Eight", "9": "Niner"
+    };
+
+    const informalEnglishDigits = {
+      "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
+      "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine"
+    };
+
+    const sharedEnglishSymbols = {
+      "@": "at sign", ".": "dot", ",": "comma", "-": "hyphen", "_": "underscore",
+      "/": "slash", "\\": "backslash", "+": "plus", "=": "equals", ":": "colon",
+      ";": "semicolon", "'": "apostrophe", "\"": "quotation mark", "#": "hash",
+      "&": "ampersand", "?": "question mark", "!": "exclamation mark", "(": "open parenthesis", ")": "close parenthesis"
+    };
+
+    const sets = {
+      enNato: {
+        label: "NATO / ICAO — international standard",
+        outputTitle: "English · NATO / ICAO",
+        description: "The international spelling alphabet used in aviation and many professional calls.",
+        template: "word",
+        locale: "en",
+        letters: {
+          A: "Alfa", B: "Bravo", C: "Charlie", D: "Delta", E: "Echo", F: "Foxtrot", G: "Golf", H: "Hotel", I: "India", J: "Juliett", K: "Kilo", L: "Lima", M: "Mike", N: "November", O: "Oscar", P: "Papa", Q: "Quebec", R: "Romeo", S: "Sierra", T: "Tango", U: "Uniform", V: "Victor", W: "Whiskey", X: "X-ray", Y: "Yankee", Z: "Zulu"
+        },
+        digits: englishDigits,
+        symbols: sharedEnglishSymbols
+      },
+      enInformal: {
+        label: "Informal phone call — “A as in Apple”",
+        outputTitle: "English · informal phone call",
+        description: "Familiar everyday words. The copied result uses phrases such as “A as in Apple.”",
+        template: "asIn",
+        locale: "en",
+        letters: {
+          A: "Apple", B: "Banana", C: "Charlie", D: "David", E: "Elephant", F: "Frank", G: "George", H: "Henry", I: "India", J: "John", K: "King", L: "London", M: "Mary", N: "Nancy", O: "Oscar", P: "Peter", Q: "Queen", R: "Robert", S: "Sam", T: "Tom", U: "Uncle", V: "Victor", W: "William", X: "X-ray", Y: "Yellow", Z: "Zebra"
+        },
+        digits: informalEnglishDigits,
+        symbols: sharedEnglishSymbols
+      },
+      ptBRPhone: {
+        label: "Português (Brasil) — palavras de telefone",
+        outputTitle: "Português (Brasil) · telefone",
+        description: "Palavras comuns para soletrar em uma ligação. Não é um padrão internacional único.",
+        template: "de",
+        locale: "pt-BR",
+        letters: {
+          A: "Amor", B: "Bola", C: "Casa", D: "Dado", E: "Escola", F: "Faca", G: "Gato", H: "Hotel", I: "Igreja", J: "Janela", K: "Kiwi", L: "Lua", M: "Mãe", N: "Navio", O: "Ouro", P: "Pato", Q: "Queijo", R: "Rei", S: "Sapo", T: "Tatu", U: "Urso", V: "Vela", W: "Wilson", X: "Xícara", Y: "Yara", Z: "Zebra", Ç: "C cedilha"
+        },
+        digits: { "0": "zero", "1": "um", "2": "dois", "3": "três", "4": "quatro", "5": "cinco", "6": "seis", "7": "sete", "8": "oito", "9": "nove" },
+        symbols: { "@": "arroba", ".": "ponto", ",": "vírgula", "-": "hífen", "_": "sublinhado", "/": "barra", "\\": "barra invertida", "+": "mais", "=": "igual", ":": "dois-pontos", ";": "ponto e vírgula", "'": "apóstrofo", "\"": "aspas", "#": "cerquilha", "&": "e comercial", "?": "ponto de interrogação", "!": "ponto de exclamação", "(": "abre parêntese", ")": "fecha parêntese" }
+      },
+      ptBRIcao: {
+        label: "Português (Brasil) — ICAO / rádio",
+        outputTitle: "Português (Brasil) · ICAO / rádio",
+        description: "Versão de radiotelefonia com palavras do alfabeto internacional e nomes usuais em português.",
+        template: "word",
+        locale: "pt-BR",
+        letters: {
+          A: "Alfa", B: "Bravo", C: "Charlie", D: "Delta", E: "Eco", F: "Foxtrot", G: "Golfe", H: "Hotel", I: "Índia", J: "Juliett", K: "Kilo", L: "Lima", M: "Mike", N: "Novembro", O: "Oscar", P: "Papa", Q: "Quebec", R: "Romeo", S: "Sierra", T: "Tango", U: "Uniform", V: "Victor", W: "Whiskey", X: "X-ray", Y: "Yankee", Z: "Zulu", Ç: "C cedilha"
+        },
+        digits: { "0": "zero", "1": "um", "2": "dois", "3": "três", "4": "quatro", "5": "cinco", "6": "seis", "7": "sete", "8": "oito", "9": "nove" },
+        symbols: { "@": "arroba", ".": "ponto", ",": "vírgula", "-": "hífen", "_": "sublinhado", "/": "barra", "\\": "barra invertida", "+": "mais", "=": "igual", ":": "dois-pontos", ";": "ponto e vírgula", "'": "apóstrofo", "\"": "aspas", "#": "cerquilha", "&": "e comercial", "?": "ponto de interrogação", "!": "ponto de exclamação", "(": "abre parêntese", ")": "fecha parêntese" }
+      },
+      esIcao: {
+        label: "Español — ICAO / radio",
+        outputTitle: "Español · ICAO / radio",
+        description: "Palabras de radiotelefonía internacionales, con nombres usados en español.",
+        template: "word",
+        locale: "es",
+        letters: {
+          A: "Alfa", B: "Bravo", C: "Charlie", D: "Delta", E: "Eco", F: "Foxtrot", G: "Golf", H: "Hotel", I: "India", J: "Juliett", K: "Kilo", L: "Lima", M: "Mike", N: "Noviembre", Ñ: "Ñoño", O: "Óscar", P: "Papa", Q: "Quebec", R: "Romeo", S: "Sierra", T: "Tango", U: "Uniform", V: "Víctor", W: "Whiskey", X: "X-ray", Y: "Yankee", Z: "Zulu"
+        },
+        digits: { "0": "cero", "1": "uno", "2": "dos", "3": "tres", "4": "cuatro", "5": "cinco", "6": "seis", "7": "siete", "8": "ocho", "9": "nueve" },
+        symbols: { "@": "arroba", ".": "punto", ",": "coma", "-": "guion", "_": "guion bajo", "/": "barra", "\\": "barra invertida", "+": "más", "=": "igual", ":": "dos puntos", ";": "punto y coma", "'": "apóstrofo", "\"": "comillas", "#": "almohadilla", "&": "y comercial", "?": "signo de interrogación", "!": "signo de exclamación", "(": "abre paréntesis", ")": "cierra paréntesis" }
+      },
+      frPhone: {
+        label: "Français — alphabet téléphonique",
+        outputTitle: "Français · téléphone",
+        description: "L’alphabet téléphonique français traditionnel.",
+        template: "comme",
+        locale: "fr",
+        letters: {
+          A: "Anatole", B: "Berthe", C: "Célestin", D: "Désiré", E: "Eugène", F: "François", G: "Gaston", H: "Henri", I: "Irma", J: "Joseph", K: "Kléber", L: "Louis", M: "Marcel", N: "Nicolas", O: "Oscar", P: "Pierre", Q: "Quintal", R: "Raoul", S: "Suzanne", T: "Thérèse", U: "Ursule", V: "Victor", W: "William", X: "Xérès", Y: "Yvonne", Z: "Zoé"
+        },
+        digits: { "0": "zéro", "1": "un", "2": "deux", "3": "trois", "4": "quatre", "5": "cinq", "6": "six", "7": "sept", "8": "huit", "9": "neuf" },
+        symbols: { "@": "arobase", ".": "point", ",": "virgule", "-": "tiret", "_": "tiret bas", "/": "barre oblique", "\\": "barre oblique inverse", "+": "plus", "=": "égal", ":": "deux-points", ";": "point-virgule", "'": "apostrophe", "\"": "guillemets", "#": "dièse", "&": "et commercial", "?": "point d’interrogation", "!": "point d’exclamation", "(": "parenthèse ouvrante", ")": "parenthèse fermante" }
+      },
+      deClassic: {
+        label: "Deutsch — Buchstabiertafel clássica",
+        outputTitle: "Deutsch · klassische Buchstabiertafel",
+        description: "Die traditionelle deutsche Buchstabiertafel. Neue DIN-Versionen können regional abweichen.",
+        template: "wie",
+        locale: "de",
+        letters: {
+          A: "Anton", B: "Berta", C: "Cäsar", D: "Dora", E: "Emil", F: "Friedrich", G: "Gustav", H: "Heinrich", I: "Ida", J: "Julius", K: "Kaufmann", L: "Ludwig", M: "Martha", N: "Nordpol", O: "Otto", P: "Paula", Q: "Quelle", R: "Richard", S: "Samuel", T: "Theodor", U: "Ulrich", V: "Viktor", W: "Wilhelm", X: "Xanthippe", Y: "Ypsilon", Z: "Zacharias", Ä: "Ärger", Ö: "Ökonom", Ü: "Übermut", ß: "Eszett"
+        },
+        digits: { "0": "null", "1": "eins", "2": "zwei", "3": "drei", "4": "vier", "5": "fünf", "6": "sechs", "7": "sieben", "8": "acht", "9": "neun" },
+        symbols: { "@": "at-Zeichen", ".": "Punkt", ",": "Komma", "-": "Bindestrich", "_": "Unterstrich", "/": "Schrägstrich", "\\": "Rückwärtsschrägstrich", "+": "Plus", "=": "gleich", ":": "Doppelpunkt", ";": "Semikolon", "'": "Apostroph", "\"": "Anführungszeichen", "#": "Raute", "&": "Und-Zeichen", "?": "Fragezeichen", "!": "Ausrufezeichen", "(": "Klammer auf", ")": "Klammer zu" }
+      },
+      itPhone: {
+        label: "Italiano — alfabeto telefonico",
+        outputTitle: "Italiano · telefono",
+        description: "L’alfabeto telefonico italiano tradizionale basato su città e nomi noti.",
+        template: "di",
+        locale: "it",
+        letters: {
+          A: "Ancona", B: "Bologna", C: "Como", D: "Domodossola", E: "Empoli", F: "Firenze", G: "Genova", H: "Hotel", I: "Imola", J: "Jolly", K: "Kursaal", L: "Livorno", M: "Milano", N: "Napoli", O: "Otranto", P: "Padova", Q: "Quadro", R: "Roma", S: "Savona", T: "Torino", U: "Udine", V: "Venezia", W: "Washington", X: "Xanto", Y: "York", Z: "Zara"
+        },
+        digits: { "0": "zero", "1": "uno", "2": "due", "3": "tre", "4": "quattro", "5": "cinque", "6": "sei", "7": "sette", "8": "otto", "9": "nove" },
+        symbols: { "@": "chiocciola", ".": "punto", ",": "virgola", "-": "trattino", "_": "trattino basso", "/": "barra", "\\": "barra rovesciata", "+": "più", "=": "uguale", ":": "due punti", ";": "punto e virgola", "'": "apostrofo", "\"": "virgolette", "#": "cancelletto", "&": "e commerciale", "?": "punto interrogativo", "!": "punto esclamativo", "(": "apre parentesi", ")": "chiude parentesi" }
+      }
+    };
+
+    const sourceText = document.getElementById("sourceText");
+    const englishVersion = document.getElementById("englishVersion");
+    const secondaryLanguage = document.getElementById("secondaryLanguage");
+    const englishOutput = document.getElementById("englishOutput");
+    const secondaryOutput = document.getElementById("secondaryOutput");
+    const englishDescription = document.getElementById("englishDescription");
+    const secondaryDescription = document.getElementById("secondaryDescription");
+    const englishOutputTitle = document.getElementById("english-output-title");
+    const secondaryOutputTitle = document.getElementById("secondary-output-title");
+    const characterCount = document.getElementById("characterCount");
+    const referenceGrid = document.getElementById("referenceGrid");
+    const referenceNote = document.getElementById("referenceNote");
+    const toast = document.getElementById("toast");
+
+    let toastTimer;
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add("show");
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function normalizedKey(character) {
+      return character.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
+    function getToken(character, set) {
+      if (character === "\r") return { type: "skip" };
+      if (character === "\n") return { type: "linebreak" };
+      if (/\s/.test(character)) return { type: "space" };
+
+      const directKey = character.toLocaleUpperCase(set.locale);
+      const key = Object.prototype.hasOwnProperty.call(set.letters, directKey)
+        ? directKey
+        : Object.prototype.hasOwnProperty.call(set.letters, character)
+          ? character
+          : normalizedKey(character);
+
+      if (Object.prototype.hasOwnProperty.call(set.letters, key)) {
+        const word = set.letters[key];
+        let spoken = word;
+        if (set.template === "asIn") spoken = `${key} as in ${word}`;
+        if (set.template === "de") spoken = `${key} de ${word}`;
+        if (set.template === "comme") spoken = `${key} comme ${word}`;
+        if (set.template === "wie") spoken = `${key} wie ${word}`;
+        if (set.template === "di") spoken = `${key} di ${word}`;
+        return { type: "letter", original: character, word, spoken };
+      }
+
+      if (Object.prototype.hasOwnProperty.call(set.digits, character)) {
+        return { type: "digit", original: character, word: set.digits[character], spoken: set.digits[character] };
+      }
+
+      if (Object.prototype.hasOwnProperty.call(set.symbols, character)) {
+        return { type: "symbol", original: character, word: set.symbols[character], spoken: set.symbols[character] };
+      }
+
+      return { type: "unknown", original: character, word: character, spoken: character };
+    }
+
+    function makeTokenElement(token) {
+      if (token.type === "space") {
+        const spacer = document.createElement("span");
+        spacer.className = "word-space";
+        spacer.setAttribute("aria-label", "space");
+        return spacer;
+      }
+
+      const item = document.createElement("div");
+      item.className = `token ${token.type === "symbol" ? "symbol" : token.type === "unknown" ? "unknown" : ""}`;
+      item.title = token.spoken;
+
+      const original = document.createElement("span");
+      original.className = "original";
+      original.textContent = token.original;
+
+      const word = document.createElement("span");
+      word.className = "word";
+      word.textContent = token.word;
+
+      item.append(original, word);
+      return item;
+    }
+
+    function renderOutput(container, set) {
+      const text = sourceText.value;
+      container.replaceChildren();
+
+      if (!text) {
+        const empty = document.createElement("div");
+        empty.className = "empty-output";
+        empty.textContent = "Your phonetic spelling will appear here as you type or paste.";
+        container.append(empty);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      let line = document.createElement("div");
+      line.className = "output-line";
+      let contentOnLine = false;
+
+      for (const character of text) {
+        const token = getToken(character, set);
+        if (token.type === "skip") continue;
+        if (token.type === "linebreak") {
+          if (!contentOnLine) {
+            const marker = document.createElement("span");
+            marker.className = "helper";
+            marker.textContent = "(blank line)";
+            line.append(marker);
+          }
+          fragment.append(line);
+          line = document.createElement("div");
+          line.className = "output-line";
+          contentOnLine = false;
+          continue;
+        }
+        line.append(makeTokenElement(token));
+        contentOnLine = true;
+      }
+
+      if (!contentOnLine) {
+        const marker = document.createElement("span");
+        marker.className = "helper";
+        marker.textContent = "(blank line)";
+        line.append(marker);
+      }
+      fragment.append(line);
+      container.append(fragment);
+    }
+
+    function buildCopyText(set) {
+      const text = sourceText.value;
+      let result = "";
+      let needsGap = false;
+
+      for (const character of text) {
+        const token = getToken(character, set);
+        if (token.type === "skip") continue;
+        if (token.type === "linebreak") {
+          result = result.trimEnd() + "\n";
+          needsGap = false;
+          continue;
+        }
+        if (token.type === "space") {
+          result = result.trimEnd() + " / ";
+          needsGap = false;
+          continue;
+        }
+        if (needsGap && result && !result.endsWith("\n") && !result.endsWith(" ")) result += " ";
+        result += token.spoken;
+        needsGap = true;
+      }
+      return result.trim();
+    }
+
+    async function copyText(set) {
+      const value = buildCopyText(set);
+      if (!value) {
+        showToast("Enter text first.");
+        sourceText.focus();
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (error) {
+        const fallback = document.createElement("textarea");
+        fallback.value = value;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.append(fallback);
+        fallback.select();
+        document.execCommand("copy");
+        fallback.remove();
+      }
+      showToast("Spoken text copied. Slashes mark spaces in the original text.");
+    }
+
+    function renderReference() {
+      const englishSet = sets[englishVersion.value];
+      const secondSet = sets[secondaryLanguage.value];
+      const keys = Object.keys(englishSet.letters);
+      referenceNote.textContent = `English: ${englishSet.label}. Second panel: ${secondSet.label}. This reference shows the selected English version.`;
+      referenceGrid.replaceChildren();
+      const fragment = document.createDocumentFragment();
+
+      for (const key of keys) {
+        const item = document.createElement("div");
+        item.className = "reference-item";
+        const letter = document.createElement("span");
+        letter.className = "reference-letter";
+        letter.textContent = key;
+        const word = document.createElement("span");
+        word.textContent = englishSet.letters[key];
+        item.append(letter, word);
+        fragment.append(item);
+      }
+      referenceGrid.append(fragment);
+    }
+
+    function render() {
+      const englishSet = sets[englishVersion.value];
+      const secondSet = sets[secondaryLanguage.value];
+      characterCount.textContent = `${sourceText.value.length.toLocaleString()} character${sourceText.value.length === 1 ? "" : "s"}`;
+      englishOutputTitle.textContent = englishSet.outputTitle;
+      secondaryOutputTitle.textContent = secondSet.outputTitle;
+      englishDescription.textContent = englishSet.description;
+      secondaryDescription.textContent = secondSet.description;
+      renderOutput(englishOutput, englishSet);
+      renderOutput(secondaryOutput, secondSet);
+      renderReference();
+    }
+
+    document.getElementById("clearButton").addEventListener("click", () => {
+      sourceText.value = "";
+      render();
+      sourceText.focus();
+    });
+
+    document.getElementById("pasteButton").addEventListener("click", async () => {
+      try {
+        sourceText.value = await navigator.clipboard.readText();
+        render();
+        sourceText.focus();
+        showToast("Pasted and converted locally.");
+      } catch (error) {
+        showToast("Clipboard access was blocked. Click the text area and use Ctrl/Cmd + V.");
+        sourceText.focus();
+      }
+    });
+
+    document.getElementById("copyEnglish").addEventListener("click", () => copyText(sets[englishVersion.value]));
+    document.getElementById("copySecondary").addEventListener("click", () => copyText(sets[secondaryLanguage.value]));
+
+    sourceText.addEventListener("input", render);
+    englishVersion.addEventListener("change", render);
+    secondaryLanguage.addEventListener("change", render);
+
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        copyText(sets[englishVersion.value]);
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
